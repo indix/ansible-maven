@@ -63,5 +63,5 @@ galaxy_info:
   #- web
 dependencies:
   - role: "indix.ansible-java"
-    java_versions: {{maven_java_versions}}
+    java_versions: "{{maven_java_versions}}"
 
