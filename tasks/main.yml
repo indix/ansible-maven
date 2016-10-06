@@ -1,0 +1,71 @@
+---
+- name: Create maven directory path
+  file:
+    name: "{{maven_dest_folder}}"
+    state: directory
+    mode: "0755"
+
+- name: Download maven source tar file
+  get_url:
+    url: "http://wwwftp.ciril.fr/pub/apache/maven/maven-3/{{maven_version}}/binaries/apache-maven-{{maven_version}}-bin.tar.gz" 
+    dest: "{{maven_dest_folder}}/apache-maven-{{maven_version}}-bin.tar.gz"
+    mode: 0755
+    sha256sum: "{{maven_sha_sum}}" 
+  register: maven_exists
+
+- name: Extract maven from tar gz file
+  unarchive: 
+    src: "{{maven_dest_folder}}/apache-maven-{{maven_version}}-bin.tar.gz" 
+    dest: "{{maven_dest_folder}}" 
+    creates: "{{maven_dest_folder}}/apache-maven-{{maven_version}}" 
+    copy: no
+  when: maven_exists.changed
+
+- name: Set the permissions for maven binaries
+  file: 
+    path: "{{maven_dest_folder}}/apache-maven-{{maven_version}}/bin"
+    state: directory 
+    mode: 0755 
+    recurse: yes
+
+- name: Create /usr/local/maven directory path
+  sudo: yes
+  file:
+    name: "/usr/local/maven"
+    state: directory
+    mode: "0755"
+
+- name: Update the symbolic link to the default Maven version
+  sudo: yes
+  file:
+    path: "/usr/local/maven/default"
+    src: "{{maven_dest_folder}}/apache-maven-{{maven_version}}"
+    state: link
+    force: yes
+
+- name: Add the Maven binary to the system path (/etc/profile)
+  sudo: yes
+  lineinfile:
+    dest: "/etc/profile"
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+    state: present
+  with_items:
+    - regexp: "^M2_HOME=/usr/local/maven/default"
+      line: "M2_HOME=/usr/local/maven/default"
+    - regexp: "^M2=/usr/local/maven/default/bin"
+      line: "M2=/usr/local/maven/default/bin"
+    - regexp: "^PATH=.*M2_HOME.*"
+      line: "PATH=$PATH:$M2_HOME/bin"
+
+- name: Inform the system where Maven is located
+  sudo: yes
+  command: "{{item}}"
+  with_items:
+    - update-alternatives --install "/usr/bin/mvn" "mvn" "/usr/local/maven/default/bin/mvn" 1
+
+- name: Set the system default for Maven
+  sudo: yes
+  command: "{{item}}"
+  with_items:
+    - update-alternatives --set mvn /usr/local/maven/default/bin/mvn

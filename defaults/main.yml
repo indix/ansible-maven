@@ -1,0 +1,6 @@
+---
+maven_version: 3.3.3 
+maven_sha_sum: 3a8dc4a12ab9f3607a1a2097bbab0150c947ad6719d8f1bb6d5b47d0fb0c4779 
+maven_dest_folder: "/sources"
+maven_java_versions:
+  - oracle-jdk7-installer
